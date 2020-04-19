@@ -1,6 +1,6 @@
 // #==================================================================#
 // ‖ Author: Luis Alejandro Domínguez Bueno (LADBSoft)                ‖
-// ‖ Date: 2019-03-20                                   Version: 0.1a ‖
+// ‖ Date: 2020-04-19                                   Version: 0.1a ‖
 // #==================================================================#
 // ‖ Name: ESP8266 MQTT daitsu air conditioner simple controller      ‖
 // ‖ Description: A sketch for the ESP8266 (ESP-01 to be exact) for   ‖
@@ -24,21 +24,6 @@
 // #==================================================================#
 
 // +------------------------------------------------------------------+
-// |                       C O N S T A N T S                          |
-// +------------------------------------------------------------------+
-const char* mqttClientId   = "FF_MasterBedroomAir";
-const char* mqttPowerStateTopic = "Home/FF_MasterBedroom/AirConditioner/PowerS";
-const char* mqttPowerCommandTopic = "Home/FF_MasterBedroom/AirConditioner/PowerC";
-const char* mqttModeStateTopic  = "Home/FF_MasterBedroom/AirConditioner/ModeS";
-const char* mqttModeCommandTopic  = "Home/FF_MasterBedroom/AirConditioner/ModeC";
-const char* mqttTempStateTopic  = "Home/FF_MasterBedroom/AirConditioner/TemperatureS";
-const char* mqttTempCommandTopic  = "Home/FF_MasterBedroom/AirConditioner/TemperatureC";
-const char* mqttSpeedStateTopic = "Home/FF_MasterBedroom/AirConditioner/SpeedS";
-const char* mqttSpeedCommandTopic = "Home/FF_MasterBedroom/AirConditioner/SpeedC";
-const byte  IRReceiverPin = 1; //TX
-const byte  IRSenderPin = 3; //RX
-
-// +------------------------------------------------------------------+
 // |                        I N C L U D E S                           |
 // +------------------------------------------------------------------+
 #include <WiFiClient.h>
@@ -46,7 +31,7 @@ const byte  IRSenderPin = 3; //RX
 #include <PubSubClient.h>
 #include <IRremoteESP8266.h>
 #include <IRsend.h>
-#include "Connection.h"
+#include "Configuration.h"
 #include "Commands.h"
 
 // +------------------------------------------------------------------+
@@ -107,7 +92,7 @@ void loop() {
 void setup_wifi() {
   delay(10);
 
-  WiFi.begin(ssid, password);
+  WiFi.begin(wifiSsid, wifiPassword);
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
