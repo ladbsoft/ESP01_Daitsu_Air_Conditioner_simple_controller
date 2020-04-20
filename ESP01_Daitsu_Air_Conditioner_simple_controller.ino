@@ -1,6 +1,6 @@
 // #==================================================================#
 // ‖ Author: Luis Alejandro Domínguez Bueno (LADBSoft)                ‖
-// ‖ Date: 2020-04-19                                   Version: 0.2a ‖
+// ‖ Date: 2020-04-20                                   Version: 0.3a ‖
 // #==================================================================#
 // ‖ Name: ESP8266 MQTT daitsu air conditioner simple controller      ‖
 // ‖ Description: A sketch for the ESP8266 (ESP-01 to be exact) for   ‖
@@ -19,6 +19,7 @@
 // #==================================================================#
 // ‖ Version history:                                                 ‖
 // #==================================================================#
+// ‖ 0.3a: Bug fixes. All commands seem to work fine.                 ‖
 // ‖ 0.2a: Complete command support. Still a bit buggy though.        ‖
 // ‖ 0.1a: Start of development. Connection to the MQTT server.       ‖
 // ‖ Original remote command replication.                             ‖

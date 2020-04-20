@@ -141,38 +141,24 @@ void setPowerState(boolean newPowerState) {
     commandTemplate[POWERBIT+16]  = VALUETRUE;
     commandTemplate[POWERBIT+100] = VALUEFALSE;
     commandTemplate[POWERBIT+116] = VALUETRUE;
+    powerState = newPowerState;
 
     setMode(lastMode);
-    setFanSpeed(lastFanSpeed);
-    setTemperature(lastTemperature);
   } else {
     commandTemplate[POWERBIT]     = VALUETRUE;
     commandTemplate[POWERBIT+16]  = VALUEFALSE;
     commandTemplate[POWERBIT+100] = VALUETRUE;
     commandTemplate[POWERBIT+116] = VALUEFALSE;
+    powerState = newPowerState;
 
     /**
-     * Special cases for OFF state
+     * Special case for OFF state
      */
-    if (mode != 1) {
-      lastMode = mode;
-      setMode(1); //OFF (also COOL)
-    }
-
-    if (fanSpeed != 5) {
-      if (fanSpeed != 4) {
-        lastFanSpeed = fanSpeed;
-      }
-      setFanSpeed(5); //OFF
-    }
-
-    if (temperature != 0) {
-      lastTemperature = temperature;
-      setTemperature(0); //OFF
-    }
+    lastMode = mode;
+    setMode(1); //OFF (also COOL)
   }
 
-  powerState = newPowerState;
+  
 }
 
 void sendPowerCommand(boolean newPowerState) {
@@ -268,24 +254,42 @@ void setMode(byte newMode) {
   commandTemplate[MODEBIT2+100] = logicValues[modeCommandValues[newMode][1]];
   commandTemplate[MODEBIT2+116] = logicValues[!modeCommandValues[newMode][1]];
 
-  // Special case: Set special speed for AUTO mode
-  if (newMode == 0 && fanSpeed != 4) {
-    if (fanSpeed != 5) {
-      lastFanSpeed = fanSpeed;
+  //Special case: temperature needs to be AUTO (0) if power is OFF or mode is FAN (2)
+  if (!powerState || newMode == 2) {
+    if (temperature != 0) {
+      lastTemperature = temperature;
+      setTemperature(0);
     }
-    setFanSpeed(4);
-  // If mode is not AUTO anymore, restore last used speed
-  } else if (newMode != 0 && fanSpeed == 4) {
-    setFanSpeed(lastFanSpeed);
+  } else {
+    //If we are no longer on the special case, restore last temperature
+    if (temperature == 0) {
+      setTemperature(lastTemperature);
+    }
   }
 
-  // Special case: Set no temperature for FAN mode
-  if (newMode == 2 && temperature != 0) {
-    lastTemperature = temperature;
-    setTemperature(0);
-  // If mode is not FAN anymore, restore last used temperature
-  } else if (newMode != 2 && temperature == 0) {
-    setTemperature(lastTemperature);
+  //Special case: speed needs to be OFF (5) if power is OFF
+  if (!powerState) {
+    if (fanSpeed != 5) {
+      if (fanSpeed != 4) {
+        lastFanSpeed = fanSpeed;
+      }
+      setFanSpeed(5);
+    }
+  } else {
+    //Special case: speed needs to be SPECIAL (4) if power is ON and mode is AUTO (0)
+    if (powerState && newMode == 0) {
+      if (fanSpeed != 4) {
+        if (fanSpeed != 5) {
+          lastFanSpeed = fanSpeed;
+        }
+        setFanSpeed(4);
+      }
+    } else {
+      //If we are no longer on any of the special cases, restore last speed
+      if (fanSpeed == 4 || fanSpeed == 5) {
+        setFanSpeed(lastFanSpeed);
+      }
+    }
   }
 
   mode = newMode;
