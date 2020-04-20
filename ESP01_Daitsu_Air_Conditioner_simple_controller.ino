@@ -29,7 +29,7 @@
 #include <WiFiClient.h>
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
-#include <IRremoteESP8266.h>
+ #include <IRremoteESP8266.h>
 #include <IRsend.h>
 #include "Configuration.h"
 #include "Commands.h"
@@ -54,11 +54,11 @@ void setup() {
   pinMode(IRReceiverPin, INPUT);   // For receiving remote commands
   pinMode(IRSenderPin, OUTPUT);    // For sending commands
 
-  commandSetup();
-
   setup_wifi();
   client.setServer(mqttServer, mqttPort);
   client.setCallback(callback);
+
+  commandSetup();
 }
 
 // +------------------------------------------------------------------+
@@ -77,11 +77,7 @@ void loop() {
   if (now - lastCheck > 5000) {
     lastCheck = now;
 
-    if(powerState) {
-      client.publish(mqttPowerStateTopic, "ON");
-    } else {
-      client.publish(mqttPowerStateTopic, "OFF");
-    }
+    publishStates();
   }
 }
 
@@ -121,28 +117,42 @@ void callback(char* topic, byte* payload, unsigned int length) {
       sendPowerCommand(false);
     }
 
-// Speed Topic: Payload will be a number between 0 (AUTO) and 3 (HIGH)
+// Speed Topic: Payload will be "AUTO", "LOW", "MED", or "HIGH"
   } else if(topicString.equals(String(mqttSpeedCommandTopic))) {
-    if(payloadByte >= 0 && payloadByte <= 3) {
-      sendSpeedCommand(payloadByte);
+    if (payloadString.equals("AUTO")) {
+      sendSpeedCommand(0);
+    } else if (payloadString.equals("LOW")) {
+      sendSpeedCommand(1);
+    } else if (payloadString.equals("MED")) {
+      sendSpeedCommand(2);
+    } else if (payloadString.equals("HIGH")) {
+      sendSpeedCommand(3);
     }
 
-// Mode Topic: Payload will be a number:
-// 0 -> AUTO
-// 1 -> COOL
-// 2 -> FAN
-// 3 -> HEAT
+// Mode Topic: Payload will be "AUTO", "COOL", "FAN" or "HEAT"
   } else if(topicString.equals(String(mqttModeCommandTopic))) {
-    if(payloadByte >= 0 && payloadByte <= 3) {
-      sendModeCommand(payloadByte);
+    if (payloadString.equals("AUTO")) {
+      sendModeCommand(0);
+    } else if (payloadString.equals("COOL")) {
+      sendModeCommand(1);
+    } else if (payloadString.equals("FAN")) {
+      sendModeCommand(2);
+    } else if (payloadString.equals("HEAT")) {
+      sendModeCommand(3);
     }
 
-// Temperature Topic: Payload will be a number corresponding with the desired temperature, between 17 and 30
+// Temperature Topic: Payload will be "AUTO" or a number corresponding to the desired temperature, between 17 and 30
   } else if(topicString.equals(String(mqttTempCommandTopic))) {
-    if(payloadByte >= 17 && payloadByte <= 30) {
-      sendTemperatureCommand(payloadByte);
+    if (payloadString.equals("AUTO")) {
+      sendTemperatureCommand(0);
+    } else {
+      if (payloadByte >= 17 && payloadByte <= 30) {
+        sendTemperatureCommand(payloadByte);
+      }
     }
   }
+
+  publishStates();
 }
 
 void reconnect() {
@@ -159,5 +169,47 @@ void reconnect() {
       // Wait 5 seconds before retrying
       delay(5000);
     }
+  }
+}
+
+void publishStates() {
+//  Publish power state
+  if (powerState) {
+    client.publish(mqttPowerStateTopic, "ON");
+  } else {
+    client.publish(mqttPowerStateTopic, "OFF");
+  }
+
+//  Publish mode
+  if (mode == 0) {
+    client.publish(mqttModeStateTopic, "AUTO");
+  } else if (mode == 1) {
+    client.publish(mqttModeStateTopic, "COOL");
+  } else if (mode == 2) {
+    client.publish(mqttModeStateTopic, "FAN");
+  } else if (mode == 3) {
+    client.publish(mqttModeStateTopic, "HEAT");
+  }
+
+//  Publish temperature
+  if (temperature == 0) {
+    client.publish(mqttTempStateTopic, "AUTO");
+  } else {
+    client.publish(mqttTempStateTopic, String(temperature).c_str());
+  }
+
+//  Publish speed
+  if (fanSpeed == 0) {
+    client.publish(mqttSpeedStateTopic, "AUTO");
+  } else if (fanSpeed == 1) {
+    client.publish(mqttSpeedStateTopic, "LOW");
+  } else if (fanSpeed == 2) {
+    client.publish(mqttSpeedStateTopic, "MED");
+  } else if (fanSpeed == 3) {
+    client.publish(mqttSpeedStateTopic, "HIGH");
+  } else if (fanSpeed == 4) {
+    client.publish(mqttSpeedStateTopic, "SPECIAL");
+  } else if (fanSpeed == 5) {
+    client.publish(mqttSpeedStateTopic, "OFF");
   }
 }
