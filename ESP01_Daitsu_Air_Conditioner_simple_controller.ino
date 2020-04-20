@@ -1,6 +1,6 @@
 // #==================================================================#
 // ‖ Author: Luis Alejandro Domínguez Bueno (LADBSoft)                ‖
-// ‖ Date: 2020-04-20                                   Version: 0.3a ‖
+// ‖ Date: 2020-04-20                                   Version: 0.4a ‖
 // #==================================================================#
 // ‖ Name: ESP8266 MQTT daitsu air conditioner simple controller      ‖
 // ‖ Description: A sketch for the ESP8266 (ESP-01 to be exact) for   ‖
@@ -19,6 +19,8 @@
 // #==================================================================#
 // ‖ Version history:                                                 ‖
 // #==================================================================#
+// ‖ 0.4a: Added WiFi Manager, to enable new WiFi configuration       ‖
+// ‖ without reprogramming.                                           ‖
 // ‖ 0.3a: Bug fixes. All commands seem to work fine.                 ‖
 // ‖ 0.2a: Complete command support. Still a bit buggy though.        ‖
 // ‖ 0.1a: Start of development. Connection to the MQTT server.       ‖
@@ -28,10 +30,13 @@
 // +------------------------------------------------------------------+
 // |                        I N C L U D E S                           |
 // +------------------------------------------------------------------+
-#include <WiFiClient.h>
 #include <ESP8266WiFi.h>
+#include <DNSServer.h>
+#include <ESP8266WebServer.h>
+#include <WiFiManager.h>
+#include <WiFiClient.h>
 #include <PubSubClient.h>
- #include <IRremoteESP8266.h>
+#include <IRremoteESP8266.h>
 #include <IRsend.h>
 #include "Configuration.h"
 #include "Commands.h"
@@ -88,12 +93,13 @@ void loop() {
 // +------------------------------------------------------------------+
 
 void setup_wifi() {
-  delay(10);
+  WiFiManager wifiManager;
+  wifiManager.setTimeout(180); //3 minutes
 
-  WiFi.begin(wifiSsid, wifiPassword);
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
+  if(!wifiManager.autoConnect(wifiSsid, wifiPassword)) {
+    //Retry after 3 minutes with no WiFi connection
+    ESP.reset();
+    delay(5000);
   }
 }
 
