@@ -26,7 +26,6 @@
  */
 #define KHZ 38
 
-
 /**
  * Logic values in commands are composed of a pulse with a specific duration. In this case, a "true" signal
  * is a pulse of roughly 0.35ms, and a "false" signal is about 1.4ms.
@@ -109,14 +108,17 @@ uint16_t commandTemplate[] = {4660, 4240, 768,  1422, 768,  348,  768,  1422, 76
 char inChar;
 boolean powerState;
 byte temperature;
+byte lastTemperature;
 byte mode;
+byte lastMode;
 byte fanSpeed;
+byte lastFanSpeed;
 IRsend irsend(IRSenderPin);
 
 // +------------------------------------------------------------------+
 // |                         H E A D E R S                            |
 // +------------------------------------------------------------------+
-void setPower(boolean state);
+void setPowerState(boolean state);
 void sendPowerCommand(boolean state);
 void setTemperature(byte temperature);
 void sendTemperatureCommand(byte temperature);
@@ -129,75 +131,73 @@ void commandSetup();
 // +------------------------------------------------------------------+
 // |                     S U B R O U T I N E S                        |
 // +------------------------------------------------------------------+
-void setPower(boolean state) {
+void setPowerState(boolean newPowerState) {
   /**
    * A power-on command is loaded with value false. This lets me think I may have mismatched false and true values in
    * every value of the commands, but, it's too late to apologize :)
    */
-  if (state) {
+  if (newPowerState) {
     commandTemplate[POWERBIT]     = VALUEFALSE;
     commandTemplate[POWERBIT+16]  = VALUETRUE;
     commandTemplate[POWERBIT+100] = VALUEFALSE;
     commandTemplate[POWERBIT+116] = VALUETRUE;
+    powerState = newPowerState;
 
-    setTemperature(temperature);
-    setFanSpeed(fanSpeed);
-    setMode(mode);
+    setMode(lastMode);
   } else {
     commandTemplate[POWERBIT]     = VALUETRUE;
     commandTemplate[POWERBIT+16]  = VALUEFALSE;
     commandTemplate[POWERBIT+100] = VALUETRUE;
     commandTemplate[POWERBIT+116] = VALUEFALSE;
+    powerState = newPowerState;
 
+    /**
+     * Special case for OFF state
+     */
+    lastMode = mode;
     setMode(1); //OFF (also COOL)
-    setFanSpeed(5); //OFF
-    setTemperature(0); //OFF
   }
+
+  
 }
 
-void sendPowerCommand(boolean state) {
-  setPower(state);
-
-  if (state) {
-    powerState = state;
-  }
+void sendPowerCommand(boolean newPowerState) {
+  setPowerState(newPowerState);
 
   irsend.sendRaw(commandTemplate, sizeof(commandTemplate) / sizeof(commandTemplate[0]), KHZ);
   delay(40);
-  
-  if (!state) {
-    powerState = state;
-  }
 }
 
-void setTemperature(byte temperature) {
-/**
- * Temperature values are stored in the temperatureCommandValues array in the corresponding
- * index of every temperature, so the array is accessed by it.
- */
-  commandTemplate[TEMPBIT1]     = logicValues[temperatureCommandValues[temperature][0]];
-  commandTemplate[TEMPBIT1+16]  = logicValues[!temperatureCommandValues[temperature][0]];
-  commandTemplate[TEMPBIT1+100] = logicValues[temperatureCommandValues[temperature][0]];
-  commandTemplate[TEMPBIT1+116] = logicValues[!temperatureCommandValues[temperature][0]];
+void setTemperature(byte newTemperature) {
+  /**
+   * Temperature values are stored in the temperatureCommandValues array in the corresponding
+   * index of every temperature, so the array is accessed by it.
+   */
+  commandTemplate[TEMPBIT1]     = logicValues[temperatureCommandValues[newTemperature][0]];
+  commandTemplate[TEMPBIT1+16]  = logicValues[!temperatureCommandValues[newTemperature][0]];
+  commandTemplate[TEMPBIT1+100] = logicValues[temperatureCommandValues[newTemperature][0]];
+  commandTemplate[TEMPBIT1+116] = logicValues[!temperatureCommandValues[newTemperature][0]];
 
-  commandTemplate[TEMPBIT2]     = logicValues[temperatureCommandValues[temperature][1]];
-  commandTemplate[TEMPBIT2+16]  = logicValues[!temperatureCommandValues[temperature][1]];
-  commandTemplate[TEMPBIT2+100] = logicValues[temperatureCommandValues[temperature][1]];
-  commandTemplate[TEMPBIT2+116] = logicValues[!temperatureCommandValues[temperature][1]];
+  commandTemplate[TEMPBIT2]     = logicValues[temperatureCommandValues[newTemperature][1]];
+  commandTemplate[TEMPBIT2+16]  = logicValues[!temperatureCommandValues[newTemperature][1]];
+  commandTemplate[TEMPBIT2+100] = logicValues[temperatureCommandValues[newTemperature][1]];
+  commandTemplate[TEMPBIT2+116] = logicValues[!temperatureCommandValues[newTemperature][1]];
 
-  commandTemplate[TEMPBIT3]     = logicValues[temperatureCommandValues[temperature][2]];
-  commandTemplate[TEMPBIT3+16]  = logicValues[!temperatureCommandValues[temperature][2]];
-  commandTemplate[TEMPBIT3+100] = logicValues[temperatureCommandValues[temperature][2]];
-  commandTemplate[TEMPBIT3+116] = logicValues[!temperatureCommandValues[temperature][2]];
+  commandTemplate[TEMPBIT3]     = logicValues[temperatureCommandValues[newTemperature][2]];
+  commandTemplate[TEMPBIT3+16]  = logicValues[!temperatureCommandValues[newTemperature][2]];
+  commandTemplate[TEMPBIT3+100] = logicValues[temperatureCommandValues[newTemperature][2]];
+  commandTemplate[TEMPBIT3+116] = logicValues[!temperatureCommandValues[newTemperature][2]];
 
-  commandTemplate[TEMPBIT4]     = logicValues[temperatureCommandValues[temperature][3]];
-  commandTemplate[TEMPBIT4+16]  = logicValues[!temperatureCommandValues[temperature][3]];
-  commandTemplate[TEMPBIT4+100] = logicValues[temperatureCommandValues[temperature][3]];
-  commandTemplate[TEMPBIT4+116] = logicValues[!temperatureCommandValues[temperature][3]];
+  commandTemplate[TEMPBIT4]     = logicValues[temperatureCommandValues[newTemperature][3]];
+  commandTemplate[TEMPBIT4+16]  = logicValues[!temperatureCommandValues[newTemperature][3]];
+  commandTemplate[TEMPBIT4+100] = logicValues[temperatureCommandValues[newTemperature][3]];
+  commandTemplate[TEMPBIT4+116] = logicValues[!temperatureCommandValues[newTemperature][3]];
+
+  temperature = newTemperature;
 }
 
-void sendTemperatureCommand(byte temperature) {
-  setTemperature(temperature);
+void sendTemperatureCommand(byte newTemperature) {
+  setTemperature(newTemperature);
 
   if (powerState) {
     irsend.sendRaw(commandTemplate, sizeof(commandTemplate) / sizeof(commandTemplate[0]), KHZ);
@@ -205,31 +205,33 @@ void sendTemperatureCommand(byte temperature) {
   }
 }
 
-void setFanSpeed(byte fanSpeed) {
+void setFanSpeed(byte newFanSpeed) {
   /**
    * Speed values are stored in the array the same way as temperature: every value into its corresponding
    * index, being 0 = automatic speed, 1 = slow, 2 = medium and 3 = high. There are two special speeds:
    * the value for the auto mode (index 4) and the value for OFF (index 5). This subroutine is called
    * with the corresponding values for each case.
    */
-  commandTemplate[SPEEDBIT1]     = logicValues[speedCommandValues[fanSpeed][0]];
-  commandTemplate[SPEEDBIT1+16]  = logicValues[!speedCommandValues[fanSpeed][0]];
-  commandTemplate[SPEEDBIT1+100] = logicValues[speedCommandValues[fanSpeed][0]];
-  commandTemplate[SPEEDBIT1+116] = logicValues[!speedCommandValues[fanSpeed][0]];
+  commandTemplate[SPEEDBIT1]     = logicValues[speedCommandValues[newFanSpeed][0]];
+  commandTemplate[SPEEDBIT1+16]  = logicValues[!speedCommandValues[newFanSpeed][0]];
+  commandTemplate[SPEEDBIT1+100] = logicValues[speedCommandValues[newFanSpeed][0]];
+  commandTemplate[SPEEDBIT1+116] = logicValues[!speedCommandValues[newFanSpeed][0]];
 
-  commandTemplate[SPEEDBIT2]     = logicValues[speedCommandValues[fanSpeed][1]];
-  commandTemplate[SPEEDBIT2+16]  = logicValues[!speedCommandValues[fanSpeed][1]];
-  commandTemplate[SPEEDBIT2+100] = logicValues[speedCommandValues[fanSpeed][1]];
-  commandTemplate[SPEEDBIT2+116] = logicValues[!speedCommandValues[fanSpeed][1]];
+  commandTemplate[SPEEDBIT2]     = logicValues[speedCommandValues[newFanSpeed][1]];
+  commandTemplate[SPEEDBIT2+16]  = logicValues[!speedCommandValues[newFanSpeed][1]];
+  commandTemplate[SPEEDBIT2+100] = logicValues[speedCommandValues[newFanSpeed][1]];
+  commandTemplate[SPEEDBIT2+116] = logicValues[!speedCommandValues[newFanSpeed][1]];
 
-  commandTemplate[SPEEDBIT3]     = logicValues[speedCommandValues[fanSpeed][2]];
-  commandTemplate[SPEEDBIT3+16]  = logicValues[!speedCommandValues[fanSpeed][2]];
-  commandTemplate[SPEEDBIT3+100] = logicValues[speedCommandValues[fanSpeed][2]];
-  commandTemplate[SPEEDBIT3+116] = logicValues[!speedCommandValues[fanSpeed][2]];
+  commandTemplate[SPEEDBIT3]     = logicValues[speedCommandValues[newFanSpeed][2]];
+  commandTemplate[SPEEDBIT3+16]  = logicValues[!speedCommandValues[newFanSpeed][2]];
+  commandTemplate[SPEEDBIT3+100] = logicValues[speedCommandValues[newFanSpeed][2]];
+  commandTemplate[SPEEDBIT3+116] = logicValues[!speedCommandValues[newFanSpeed][2]];
+
+  fanSpeed = newFanSpeed;
 }
 
-void sendSpeedCommand(byte fanSpeed) {
-  setFanSpeed(fanSpeed);
+void sendSpeedCommand(byte newFanSpeed) {
+  setFanSpeed(newFanSpeed);
 
   if (powerState) {
     irsend.sendRaw(commandTemplate, sizeof(commandTemplate) / sizeof(commandTemplate[0]), KHZ);
@@ -237,38 +239,64 @@ void sendSpeedCommand(byte fanSpeed) {
   }
 }
 
-void setMode(byte mode) {
+void setMode(byte newMode) {
   /**
    * As temperature and speed, modes are stored into the corresponding index of modeCommandValues,
    * being 0 = automatic, 1 = cool, 2 = fan and 3 = heat.
    */
-  commandTemplate[MODEBIT1]     = logicValues[modeCommandValues[mode][0]];
-  commandTemplate[MODEBIT1+16]  = logicValues[!modeCommandValues[mode][0]];
-  commandTemplate[MODEBIT1+100] = logicValues[modeCommandValues[mode][0]];
-  commandTemplate[MODEBIT1+116] = logicValues[!modeCommandValues[mode][0]];
+  commandTemplate[MODEBIT1]     = logicValues[modeCommandValues[newMode][0]];
+  commandTemplate[MODEBIT1+16]  = logicValues[!modeCommandValues[newMode][0]];
+  commandTemplate[MODEBIT1+100] = logicValues[modeCommandValues[newMode][0]];
+  commandTemplate[MODEBIT1+116] = logicValues[!modeCommandValues[newMode][0]];
 
-  commandTemplate[MODEBIT2]     = logicValues[modeCommandValues[mode][1]];
-  commandTemplate[MODEBIT2+16]  = logicValues[!modeCommandValues[mode][1]];
-  commandTemplate[MODEBIT2+100] = logicValues[modeCommandValues[mode][1]];
-  commandTemplate[MODEBIT2+116] = logicValues[!modeCommandValues[mode][1]];
+  commandTemplate[MODEBIT2]     = logicValues[modeCommandValues[newMode][1]];
+  commandTemplate[MODEBIT2+16]  = logicValues[!modeCommandValues[newMode][1]];
+  commandTemplate[MODEBIT2+100] = logicValues[modeCommandValues[newMode][1]];
+  commandTemplate[MODEBIT2+116] = logicValues[!modeCommandValues[newMode][1]];
 
-// Special case: Set special speed for AUTO mode
-  if (mode == 0) {
-    setFanSpeed(4);
+  //Special case: temperature needs to be AUTO (0) if power is OFF or mode is FAN (2)
+  if (!powerState || newMode == 2) {
+    if (temperature != 0) {
+      lastTemperature = temperature;
+      setTemperature(0);
+    }
   } else {
-    setFanSpeed(fanSpeed);
+    //If we are no longer on the special case, restore last temperature
+    if (temperature == 0) {
+      setTemperature(lastTemperature);
+    }
   }
 
-// Special case: Set no temperature for FAN mode
-  if (mode == 2) {
-    setTemperature(0);
+  //Special case: speed needs to be OFF (5) if power is OFF
+  if (!powerState) {
+    if (fanSpeed != 5) {
+      if (fanSpeed != 4) {
+        lastFanSpeed = fanSpeed;
+      }
+      setFanSpeed(5);
+    }
   } else {
-    setTemperature(temperature);
+    //Special case: speed needs to be SPECIAL (4) if power is ON and mode is AUTO (0)
+    if (powerState && newMode == 0) {
+      if (fanSpeed != 4) {
+        if (fanSpeed != 5) {
+          lastFanSpeed = fanSpeed;
+        }
+        setFanSpeed(4);
+      }
+    } else {
+      //If we are no longer on any of the special cases, restore last speed
+      if (fanSpeed == 4 || fanSpeed == 5) {
+        setFanSpeed(lastFanSpeed);
+      }
+    }
   }
+
+  mode = newMode;
 }
 
-void sendModeCommand(byte mode) {
-  setMode(mode);
+void sendModeCommand(byte newMode) {
+  setMode(newMode);
 
   if (powerState) {
     irsend.sendRaw(commandTemplate, sizeof(commandTemplate) / sizeof(commandTemplate[0]), KHZ);
@@ -281,10 +309,8 @@ void sendModeCommand(byte mode) {
 // +------------------------------------------------------------------+
 
 void commandSetup() {
-  temperature = 23;             //23ºC
-  setTemperature(temperature);
-  fanSpeed = 0;                 //AUTO
-  setFanSpeed(fanSpeed);
-  mode = 0;                     //AUTO
-  setMode(mode);
+  setTemperature(23);           //23ºC
+  setFanSpeed(0);               //AUTO
+  setMode(0);                   //AUTO
+  setPowerState(false);         //OFF
 }
