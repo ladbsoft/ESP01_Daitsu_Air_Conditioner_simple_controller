@@ -1,6 +1,6 @@
 // #==================================================================#
 // ‖ Author: Luis Alejandro Domínguez Bueno (LADBSoft)                ‖
-// ‖ Date: 2020-04-20                                   Version: 0.4a ‖
+// ‖ Date: 2020-04-20                                    Version: 1.0 ‖
 // #==================================================================#
 // ‖ Name: ESP8266 MQTT daitsu air conditioner simple controller      ‖
 // ‖ Description: A sketch for the ESP8266 (ESP-01 to be exact) for   ‖
@@ -19,6 +19,7 @@
 // #==================================================================#
 // ‖ Version history:                                                 ‖
 // #==================================================================#
+// ‖ 1.0:  First stable version released.                             ‖
 // ‖ 0.4a: Added WiFi Manager, to enable new WiFi configuration       ‖
 // ‖ without reprogramming.                                           ‖
 // ‖ 0.3a: Bug fixes. All commands seem to work fine.                 ‖
